@@ -11,9 +11,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # Connect to the server
-server_address = '10.0.0.20'
+server_address = '10.0.0.20' #docker ip insted and than add it to the
 server_port = 12345
-client_socket.connect((server_address, server_port))
+client_socket.connect((server_address, server_port)) # just for now , when the dockers will be done it will be replace with a struct of the data
 print(f"Connected to {server_address}:{server_port}")
 
 # Initialize AES key
