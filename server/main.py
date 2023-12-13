@@ -33,4 +33,8 @@ def start_server(host='0.0.0.0', port=65432):
                 print(f"Received (decrypted): {decrypted_message.decode('utf-8')}")
                 conn.sendall(data)  # Echo back the received data (optional)
 
+def get_key():
+
+
+
 start_server()
