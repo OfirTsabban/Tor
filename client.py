@@ -14,15 +14,15 @@ def interactive_client(entry_node_url, entry_node_key):
         message = input("Enter path of website : ")
         if message.lower() == 'exit':
             break
-        encrypted_message = utils.encrypt_message(exit_node_key, message)
-        print(encrypted_message)
-        encrypted_message = utils.encrypt_message(relay_node_key, encrypted_message)
-        print(encrypted_message)
-        encrypted_message = utils.encrypt_message(entry_node_key, encrypted_message)
-        print(encrypted_message)
-        response = requests.post(entry_node_url, data=encrypted_message)
 
-        print(response)
+        encrypted_message = utils.encrypt_message(exit_node_key, message)
+        # Encrypt using relay_node_key
+        encrypted_message = utils.encrypt_message(relay_node_key, encrypted_message)
+        # Encrypt using entry_node_key
+        encrypted_message = utils.encrypt_message(entry_node_key, encrypted_message)
+        # Send the encrypted message to the entry node
+        response = requests.post(entry_node_url, data=encrypted_message)
+        print("Response from entry node:", response.text)
 
 # Example usage
 # Set the entry node URL and key
