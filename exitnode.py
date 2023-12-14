@@ -15,7 +15,7 @@ def node(node_type):
     data = request.data
     if node_type == 'exit':
         final_message = utils.decrypt_message(exit_node_key, data)
-
+        print(final_message)
         # Fetch website content
         response = requests.get(final_message)
         encrypted_content = utils.encrypt_message(relay_node_key, response.text)

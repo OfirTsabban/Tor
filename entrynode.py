@@ -23,7 +23,7 @@ def node(node_type):
         decrypted_message = utils.decrypt_message(entry_node_key, data)
         # Forward to relay node
         next_node_url = 'http://172.17.0.3:5002/node/relay'
-        utils.forward_message(next_node_url, utils.encrypt_message(relay_node_key, decrypted_message))
+        utils.forward_message(next_node_url, decrypted_message)
 
     return "Data received and processed", 200
 

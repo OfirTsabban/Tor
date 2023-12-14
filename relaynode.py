@@ -16,7 +16,7 @@ def node(node_type):
         decrypted_message = utils.decrypt_message(relay_node_key, data)
         # Forward to exit node
         next_node_url = 'http://172.17.0.4:5003/node/exit'
-        utils.forward_message(next_node_url, utils.encrypt_message(exit_node_key, decrypted_message))
+        utils.forward_message(next_node_url, decrypted_message)
     return "Data received and processed", 200
 
 @app.route('/relay_node', methods=['POST'])

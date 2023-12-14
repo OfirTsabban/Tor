@@ -9,14 +9,17 @@ exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
 
 
 def interactive_client(entry_node_url, entry_node_key):
-    print("Interactive Tor-like Client. Type 'exit' to quit.")
+    print("Interactive Tor-like Client. Type 'exit' to quit.\n")
     while True:
-        message = input("Enter message: ")
+        message = input("Enter path of website : ")
         if message.lower() == 'exit':
             break
-        encrypted_message = utils.encrypt_message(entry_node_key, message)
+        encrypted_message = utils.encrypt_message(exit_node_key, message)
         print(encrypted_message)
-        print(entry_node_url)
+        encrypted_message = utils.encrypt_message(relay_node_key, encrypted_message)
+        print(encrypted_message)
+        encrypted_message = utils.encrypt_message(entry_node_key, encrypted_message)
+        print(encrypted_message)
         response = requests.post(entry_node_url, data=encrypted_message)
 
         print(response)
