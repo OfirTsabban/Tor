@@ -4,7 +4,7 @@ import socket
 
 # Setting up the node keys
 entry_node_key = b'mtb9sESXDBeNMZcKHTHdRQlxwLGHH_htTvjMbNnK5Zo='
-relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
+relay_node_key = utils.not_user_diffie_helman()
 exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
 
 app = Flask(__name__)
