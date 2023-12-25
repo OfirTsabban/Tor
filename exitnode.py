@@ -4,8 +4,7 @@ import requests
 import socket
 
 # Setting up the node keys
-entry_node_key = b'mtb9sESXDBeNMZcKHTHdRQlxwLGHH_htTvjMbNnK5Zo='
-relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
+
 exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
 
 app = Flask(__name__)
@@ -13,18 +12,15 @@ app = Flask(__name__)
 @app.route('/node/<node_type>', methods=['POST'])
 def node(node_type):
     data = request.data
+    decreptList = 0
     if node_type == 'exit':
-        final_message = utils.decrypt_message(exit_node_key, data)
-        print(final_message)
-        # Fetch website content
-        response = requests.get(final_message)
-        encrypted_content = utils.encrypt_message(relay_node_key, response.text)
+        utils.move_package_and_remove_encrepion(exit_node_key,data)
 
-        next_node_url = 'http://172.17.0.3:5002/relay_node'
+        #next_node_url = 'http://172.17.0.3:5002/relay_node'
         # Send back to relay node
-        utils.forward_message(next_node_url, encrypted_content)
+        #utils.forward_message(next_node_url, encrypted_content)
         return "Exit node processed request", 200
-        exit_node(final_message)
+        #exit_node(final_message)
 
     return "Data received and processed", 200
 

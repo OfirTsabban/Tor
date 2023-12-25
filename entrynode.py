@@ -1,12 +1,14 @@
 import utils
 from flask import Flask, request
 import socket
+import requests
 
+isDecrept = True
 
 # Setting up the node keys
 entry_node_key = b'mtb9sESXDBeNMZcKHTHdRQlxwLGHH_htTvjMbNnK5Zo='
-relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
-exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
+
+
 # entry_node_key = utils.generate_key()
 # relay_node_key = utils.generate_key()
 # exit_node_key = utils.generate_key()
@@ -17,14 +19,14 @@ app = Flask(__name__)
 @app.route('/node/<node_type>', methods=['POST'])
 
 def node(node_type):
+    global lisDecrept
+    if isDecrept == True:
+        entry_node()
     data = request.data
-
+    decreptList = []
     if node_type == 'entry':
-        decrypted_message = utils.decrypt_message(entry_node_key, data)
-        # Forward to relay node
-        next_node_url = 'http://172.17.0.3:5002/node/relay'
-        utils.forward_message(next_node_url, decrypted_message)
-
+        isDecrept = True
+        utils.move_package_and_remove_encrepion(entry_node_key,data)
     return "Data received and processed", 200
 
 @app.route('/entry_node', methods=['POST'])
