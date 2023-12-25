@@ -3,8 +3,8 @@ from flask import Flask, request
 import socket
 import requests
 
-# Setting up the node keys
-relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
+relay_node_key = utils.not_user_diffie_helman()
+
 
 app = Flask(__name__)
 

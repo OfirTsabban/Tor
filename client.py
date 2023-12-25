@@ -7,12 +7,13 @@ first_node_url = 'http://172.17.0.2:5001/node/entry'
 second_node_url = 'http://172.17.0.3:5002/node/relay'
 third_node_url = 'http://172.17.0.4:5003/node/exit'
 
-list_of_urls = [first_node_url,second_node_url,third_node_url]
-
-# Setting up the node keys
 entry_node_key = b'mtb9sESXDBeNMZcKHTHdRQlxwLGHH_htTvjMbNnK5Zo='
 relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
 exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
+
+list_of_urls = [first_node_url,second_node_url,third_node_url]
+
+# Setting up the node keys
 
 def interactive_client(list_by_order):
     print("Interactive Tor-like Client. Type 'exit' to quit.\n")
@@ -102,7 +103,23 @@ def random_orders_to_nodes():
     newList = [first_node,second_node,third_node]
     return newList
 
-if __name__ == "__main__":
-    list_by_order = random_orders_to_nodes()
+def diffie_helman(entry_node_url):
+    P = utils.get_P()
+    G = utils.get_G(P)
+    a = utils.get_a(P)
+    b = pow(G, a) % P
+    message = f"P:{P},G:{G},b:{b}"
+    response = requests.post(entry_node_url, data=message)
+    print("Response from entry node:", response.text)
+    b2 = int(utils.get_result(response))
+    print('Received from server: ' + b2)  # show in terminal
+    key = pow(b2, a) % P
+    print(key)
+    return key
 
+if __name__ == "__main__":
+    entry_node_key = diffie_helman(list_of_urls[0])
+    relay_node_key = diffie_helman(list_of_urls[1])
+    exit_node_key = diffie_helman(list_of_urls[2])
+    list_by_order = random_orders_to_nodes()
     interactive_client(list_by_order)

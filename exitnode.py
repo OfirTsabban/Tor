@@ -3,9 +3,7 @@ from flask import Flask, request
 import requests
 import socket
 
-# Setting up the node keys
-
-exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
+exit_node_key = utils.not_user_diffie_helman()
 
 app = Flask(__name__)
 
