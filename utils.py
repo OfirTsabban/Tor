@@ -49,10 +49,5 @@ def decrypt_message(key, message):
     except (pickle.UnpicklingError, TypeError):
         # If it's not a pickled object, continue with decoding
         decrypted_message = decrypted_message.decode()
-
     return decrypted_message
 
-# Function to forward the message to the next node
-def forward_message(next_node_url, message):
-    response = requests.post(next_node_url, data=message)
-    return response.text
