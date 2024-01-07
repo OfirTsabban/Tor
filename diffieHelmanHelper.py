@@ -1,0 +1,62 @@
+
+def prime_checker(p):
+    # Checks If the number entered is a Prime Number or not
+    if p < 1:
+        return -1
+    elif p > 1:
+        if p == 2:
+            return 1
+        for i in range(2, p):
+            if p % i == 0:
+                return -1
+            return 1
+
+def get_result(message):
+    index = message.find("b:") + 2
+    return int(message[index:])
+
+def primitive_check(g, p, L):
+    # Checks If The Entered Number Is A Primitive Root Or Not
+    for i in range(1, p):
+        L.append(pow(g, i) % p)
+    for i in range(1, p):
+        if L.count(i) > 1:
+            L.clear()
+            return -1
+        return 1
+
+def get_P(): #getting P
+    while 1:
+        P = int(input("Enter P : "))
+        if prime_checker(P) == -1:
+            print("Number Is Not Prime, Please Enter Again!")
+            continue
+        return P
+
+def get_G(P): #getting G
+    l = []
+    while 1:
+        G = int(input(f"Enter The Primitive Root Of {P} : "))
+        if primitive_check(G, P, l) == -1:
+            print(f"Number Is Not A Primitive Root Of {P}, Please Try Again!")
+            continue
+        return G
+
+def get_a(P):
+    while 1: #getting secret number a
+        a = int(input("Enter secret number: "))
+        if a >= P:
+            print(f"Private Key should Be Less Than {P}!")
+            continue
+        return a
+
+def get_result(message):
+    index = message.find("b:") + 2
+    return int(message[index:])
+
+def get_P_G(message,pg):
+     index = message.find(pg) + 2
+     message = message[index:]
+     index = message.find(",")
+     return int(message[:index])
+
