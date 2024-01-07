@@ -1,125 +1,39 @@
-import utils
-import requests
 import socket
-import random
+import diffieHelmanHelper
 
-first_node_url = 'http://172.17.0.2:5001/node/entry'
-second_node_url = 'http://172.17.0.3:5002/node/relay'
-third_node_url = 'http://172.17.0.4:5003/node/exit'
+KEY = 0
+def client_program():
+    host = socket.gethostname()  # as both code is running on same pc
+    port = 5000  # socket server port number
 
-entry_node_key = b'mtb9sESXDBeNMZcKHTHdRQlxwLGHH_htTvjMbNnK5Zo='
-relay_node_key = b'mfXrVpzghdWnwvBYmjEcAMgd14JD4ZElH0AIQBxo-yk='
-exit_node_key = b'pfUafqxk18k2eRTyLlyOlye2P5HkLu_UtfGsHdGZBDg='
+    client_socket = socket.socket()  # instantiate
+    client_socket.connect((host, port))  # connect to the server
 
-list_of_urls = [first_node_url,second_node_url,third_node_url]
+    message = input(" -> ")  # take input
 
-# Setting up the node keys
+    while message.lower().strip() != 'bye':
+        client_socket.send(message.encode())  # send message
+        data = client_socket.recv(1024).decode()  # receive response
+        if str(data) == "1":
+            key = diffie_helman(str(data), client_socket)
+            print(key)
+        message = input(" -> ")
+        print('Received from server: ' + message)  # show in terminal
+        #server checks if user already has a key.
 
-def interactive_client(list_by_order):
-    print("Interactive Tor-like Client. Type 'exit' to quit.\n")
-    func_paramete_list = []
-    while True:
-        message = input("Enter path of website : ")
-        if message.lower() == 'exit':
-            break
-        func_paramete_list.append(message)
-        if "entry" in list_by_order[0]:
-            func_paramete_list.append(entry_node_key)
-            func_paramete_list.append(list_of_urls[0])
-            #response = makeEncreption(message,entry_node_key,list_of_urls[0])
-            if "relay" in list_by_order[1]:
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                #response = makeEncreption(message,entry_node_key,list_of_urls[0],)
-            elif "exit" in list_by_order[1]:
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
+    client_socket.close()  # close the connection
 
-        elif "relay" in list_by_order[0]:
-
-            func_paramete_list.append(relay_node_key)
-            func_paramete_list.append(list_of_urls[1])
-
-            if "entry" in list_by_order[1]:
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-
-            elif "exit" in list_by_order[1]:
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-
-        elif "exit" in list_by_order[0]:
-
-            func_paramete_list.append(exit_node_key)
-            func_paramete_list.append(list_of_urls[2])
-
-            if "entry" in list_by_order[1]:
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-
-            elif "relay" in list_by_order[1]:
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-
-        response = makeEncreption(func_paramete_list)
-        print("Response from entry node:", response.text)
-
-def makeEncreption(func_paramete_list):
-        encrypted_message = utils.encrypt_message(func_paramete_list[1], func_paramete_list[0])
-        # Encrypt using relay_node_key
-        argument_list = [encrypted_message,func_paramete_list[4]]
-        encrypted_message = utils.encrypt_message(func_paramete_list[3], argument_list)
-        argument_list = [encrypted_message,func_paramete_list[6]]
-        # Encrypt using entry_node_key
-        encrypted_message = utils.encrypt_message(func_paramete_list[5], argument_list)
-        # Send the encrypted message to the entry node
-        response = requests.post(func_paramete_list[2], data=encrypted_message)
-        return response
-# Example usage
-# Set the entry node URL and key
-# Run the interactive client
-#client_ip = socket.gethostbyname(socket.gethostname())
-#print(client_ip)
-
-def random_orders_to_nodes():
-    my_list = [first_node_url,second_node_url ,third_node_url]
-    first_node = random.choice(my_list)
-    my_list.remove(first_node)
-    second_node = random.choice(my_list)
-    my_list.remove(second_node)
-    third_node = my_list[0]
-    newList = [first_node,second_node,third_node]
-    return newList
-
-def diffie_helman(entry_node_url):
-    P = utils.get_P()
-    G = utils.get_G(P)
-    a = utils.get_a(P)
+def diffie_helman(data, socket):
+    data = socket.recv(1024).decode()  # receive response
+    P = diffieHelmanHelper.get_P_G(data, "P:")
+    G = diffieHelmanHelper.get_P_G(data, "G:")
+    a = diffieHelmanHelper.get_a(P)
+    b2 = int(diffieHelmanHelper.get_result(data))
     b = pow(G, a) % P
-    message = f"P:{P},G:{G},b:{b}"
-    response = requests.post(entry_node_url, data=message)
-    print("Response from entry node:", response.text)
-    b2 = int(utils.get_result(response))
-    print('Received from server: ' + b2)  # show in terminal
-    key = pow(b2, a) % P
-    print(key)
-    return key
+    data = f"P:{P},G:{G},b:{b}"
+    socket.send(data.encode())
+    return pow(b2, a) % P
 
-if __name__ == "__main__":
-    entry_node_key = diffie_helman(list_of_urls[0])
-    relay_node_key = diffie_helman(list_of_urls[1])
-    exit_node_key = diffie_helman(list_of_urls[2])
-    list_by_order = random_orders_to_nodes()
-    interactive_client(list_by_order)
+if __name__ == '__main__':
+    client_program()
+
