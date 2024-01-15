@@ -25,7 +25,7 @@ def client_program():
 
     client_socket.close()  # close the connection
 
-def message_forwarding(packet): 
+def message_forwarding(packet):
     message_recived = False
     fail = False
     while message_recived == False:
