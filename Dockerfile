@@ -1,17 +1,17 @@
 # Use an official Python runtime as a parent image
-FROM python:3.8-slim
+FROM python:3.8
+ARG SCRIPT_NAME
 
-# Set the working directory to /app
-WORKDIR /app
+# Set the working directory in the container
+WORKDIR /usr/src/app
 
-# Copy the current directory contents into the container at /app
-COPY server/main.py /app
+# Copy the current directory contents into the container at /usr/src/app
+COPY . .
 
 # Install any needed packages specified in requirements.txt
-RUN pip install cryptography
+RUN pip install -r requirements.txt
+RUN echo ${SCRIPT_NAME}
 
-# Make port 3009 available to the world outside this container
-#EXPOSE 3009
-
-# Run app.py when the container launches
-CMD ["python", "/app/main.py"]
+EXPOSE ${PORT_NUMBER}
+# Run the appropriate python file when the container launches
+CMD ["python", '\"${SCRIPT_NAME}\"']
