@@ -4,6 +4,7 @@ import utils
 #we need to add data base of user id and rather they have a key already.
 
 def server_program():
+    key = 1
     no_key = True #change after building db.
     # get the hostname
     host = socket.gethostname()
