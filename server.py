@@ -1,10 +1,17 @@
 import socket
 import diffieHelmanHelper
 import utils
+import sqlite3
+
 #we need to add data base of user id and rather they have a key already.
 
 def server_program():
-    key = 1
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
+    res = cur.execute("SELECT name FROM sqlite_master")
+    if res.fetchone() is None:
+        cur.execute("CREATE TABLE users(name, password, key, id, url)")
+
     no_key = True #change after building db.
     # get the hostname
     host = socket.gethostname()
