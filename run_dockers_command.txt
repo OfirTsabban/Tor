@@ -1,0 +1,12 @@
+docker build --build-arg SCRIPT_NAME="./entrynode.py" --build-arg PORT_NUMBER=5001 -t tor-entry-node:0.2 .
+docker run -p 5001:5001 tor-entry-node:0.2 python ./entrynode.py
+
+docker build --build-arg SCRIPT_NAME="./relaynode.py" --build-arg PORT_NUMBER=5002 -t tor-relay-node:0.2 .
+docker run -p 5002:5002 tor-relay-node:0.2 python ./relaynode.py
+
+docker build --build-arg SCRIPT_NAME="./exitnode.py" --build-arg PORT_NUMBER=5003 -t tor-exit-node:0.2 .
+docker run -p 5003:5003 tor-exit-node:0.2 python ./exitnode.py
+
+docker build --build-arg SCRIPT_NAME="./client.py" -t tor-client:0.2 .
+
+docker run -it tor-client:0.2 python ./client.py
