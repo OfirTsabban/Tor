@@ -12,10 +12,23 @@ def client_program():
     while message.lower().strip() != 'bye':
         client_socket.send(message.encode())  # send message
         data = client_socket.recv(1024).decode()  # receive response
-        if str(data) == "1":
-            key = diffie_helman(str(data), client_socket)
-            print(key)
-        if str(data) == "2":
+        mode = get_mode(data)
+        if mode == 1:
+            print(data)
+            choice = input("enter choice: ")
+            client_socket.send(choice.encode())
+            data = client_socket.recv(1024).decode()
+            print(data)
+            choice = input("enter name: ")
+            client_socket.send(choice.encode())
+            data = client_socket.recv(1024).decode()
+            print(data)
+            choice = input("enter password: ")
+            client_socket.send(choice.encode())
+            if(choice == "2"):
+                key = diffie_helman(str(data), client_socket)
+                print(key)
+        if mode == 2: #has to be on a thread
             packet = client_socket.recv(1024).decode()  # receive response
             data = message_forwarding(packet)
             client_socket.send(data.encode())  # send message
@@ -25,14 +38,17 @@ def client_program():
 
     client_socket.close()  # close the connection
 
-def message_forwarding(packet):
+def get_mode(data):
+    mode = data[data.find(":"):data.find("/")]
+    return int(mode)
+
+def forward_message(packet):
     message_recived = False
     fail = False
     while message_recived == False:
         port = 5000
         #get ip & port from packet
         server_socket = socket.socket()  # get instance
-        #look closely. The bind() function takes tuple as argument
         server_socket.bind((host, port))  # bind host address and port together
         server_socket.listen(1)
         conn, address = server_socket.accept()  # accept new connection
