@@ -9,7 +9,7 @@ def client_program():
 
     message = input(" -> ")  # take input
 
-    while message.lower().strip() != 'bye':
+    while message.lower().strip() != 'exit':
         client_socket.send(message.encode())  # send message
         data = client_socket.recv(1024).decode()  # receive response
         if str(data) == "1":
