@@ -2,7 +2,6 @@ from cryptography.fernet import Fernet
 import requests
 import pickle
 
-from flask import request
 
 def move_package_and_remove_encrepion(node_key,data):
     decrypted_message = decrypt_message(node_key, data)
@@ -51,3 +50,6 @@ def decrypt_message(key, message):
         decrypted_message = decrypted_message.decode()
     return decrypted_message
 
+def forward_message(next_node_url, message):
+    response = requests.post(next_node_url, data=message)
+    return response.text

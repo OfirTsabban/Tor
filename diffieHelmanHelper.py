@@ -1,3 +1,6 @@
+import random
+
+
 
 def prime_checker(p):
     # Checks If the number entered is a Prime Number or not
@@ -26,29 +29,44 @@ def primitive_check(g, p, L):
         return 1
 
 def get_P(): #getting P
-    while 1:
-        P = int(input("Enter P : "))
-        if prime_checker(P) == -1:
-            print("Number Is Not Prime, Please Enter Again!")
-            continue
-        return P
+    P = generate_random_p
+    return P
 
 def get_G(P): #getting G
     l = []
     while 1:
-        G = int(input(f"Enter The Primitive Root Of {P} : "))
+        G = random.random()
         if primitive_check(G, P, l) == -1:
             print(f"Number Is Not A Primitive Root Of {P}, Please Try Again!")
             continue
         return G
 
+
+def is_prime(n):
+    if n <= 1:
+        return False
+    elif n == 2:
+        return True
+    elif n % 2 == 0:
+        return False
+    else:
+        for i in range(3, int(n**0.5) + 1, 2):
+            if n % i == 0:
+                return False
+        return True
+
+def generate_random_p():
+    while True:
+        random_number = random.randint(2, 10**6)  # Adjust the range as needed
+        if is_prime(random_number):
+            return random_number
+
+
+
+
 def get_a(P):
-    while 1: #getting secret number a
-        a = int(input("Enter secret number: "))
-        if a >= P:
-            print(f"Private Key should Be Less Than {P}!")
-            continue
-        return a
+    a = random_number = random.random() * P
+    return a
 
 def get_result(message):
     index = message.find("b:") + 2
