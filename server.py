@@ -1,35 +1,36 @@
 import socket
+import threading
 import diffieHelmanHelper
 import utils
 import sqlite3
 import DatabaseUtils
+import random
 
-def start_connection(): #we need to send data to a specific port & ip so when server becomes multy server it will change
+def start_connection():
     host = socket.gethostname()
     port = 5000
-    server_socket = socket.socket()  # get instance
-    server_socket.bind((host, port))  # bind host address and port together
-    server_socket.listen(1)
-    conn, address = server_socket.accept()  # accept new connection
-    return conn
+    server_socket = socket.socket()
+    server_socket.bind((host, port))
+    server_socket.listen(5)
+    return server_socket
 
-def server_program():
-    #Creating database
+def handle_client(conn, address):
+    print("Connection from: " + str(address))
+
     con = sqlite3.connect("users.db")
     cur = con.cursor()
     res = cur.execute("SELECT name FROM sqlite_master")
     if res.fetchone() is None:
         cur.execute("CREATE TABLE users(name, password, key, url)")
 
-    conn = start_connection()
-    #needs to be a thread bc its multy server
-    print("Connection from: " + str(address))
     message = "message type:1/HELLO!\nENTER 1 TO CONNECT\nENTER 2 TO REGISTER\n"
     conn.send(message.encode())
-    server_menu(conn)
-    conn.close()  # close the connection
 
-def server_menu(conn): #needs to be on a thread, might have some changes
+    server_menu(conn)
+
+    conn.close()
+
+def server_menu(conn):
     while True:
         choice = conn.recv(1024).decode()
         if not choice:
@@ -44,12 +45,11 @@ def server_menu(conn): #needs to be on a thread, might have some changes
     while True:
         web = conn.recv(1024).decode()
         if not web:
-            return "couldnt reach the page\n"
-        #open this on a thread
+            return "couldn't reach the page\n"
         data = forward_message(web)
         conn.send(data.encode())
 
-def forward_message(data):  #need to get ip & port. this is only on a thread, check and commit
+def forward_message(data):
     message_recived = False
     fail = False
     packet = create_packet(data)
@@ -58,19 +58,17 @@ def forward_message(data):  #need to get ip & port. this is only on a thread, ch
     conn.send(packet.encode())
 
     while message_recived == False:
-        # receive data stream. it won't accept data packet greater than 1024 bytes
         data = conn.recv(1024).decode()
         if not data:
-            # if data is not received break
             fail = True
             break
         else:
             message_recived = True
     if fail == True:
-        data = "couldnt reach the page\n"
+        data = "couldn't reach the page\n"
     return data
 
-def create_packet(data): #check and commit --- check if need to change url to ip and port
+def create_packet(data):
     rout = random_order()
     packet = "message type:2/" + data
     for node in rout:
@@ -79,7 +77,7 @@ def create_packet(data): #check and commit --- check if need to change url to ip
         packet = "message type:2/" + utils.decrypt(packet, key) + url
     return packet
 
-def random_order(): #check amd commit
+def random_order():
     usernames = DatabaseUtils.get_usernames()
     names = ""
     for username in usernames:
@@ -96,8 +94,8 @@ def diffie_helman(conn):
     a = diffieHelmanHelper.get_a(P)
     b = pow(G, a) % P
     data = f"P:{P},G:{G},b:{b}"
-    conn.send(data.encode())  # send message
-    data = conn.recv(1024).decode()  # receive response
+    conn.send(data.encode())
+    data = conn.recv(1024).decode()
     b2 = int(diffieHelmanHelper.get_result(str(data)))
     key = pow(b2, a) % P
     print(key)
@@ -108,17 +106,15 @@ def get_user_info(conn):
     conn.send(message.encode())
     name = conn.recv(1024).decode()
     if not name:
-    # if data is not received break
-        name=""
-    message= "ENTER PASSWORD: "
+        name = ""
+    message = "ENTER PASSWORD: "
     conn.send(message.encode())
     password = conn.recv(1024).decode()
     if not password:
-        # if data is not received break
-        password=""
-    return (name,password)
+        password = ""
+    return (name, password)
 
-def authentication(username, password, mode, conn): #check and commit
+def authentication(username, password, mode, conn):
     if mode == 1:
         if username in DatabaseUtils.get_usernames():
             if password == DatabaseUtils.get_userpassword(username):
@@ -126,6 +122,15 @@ def authentication(username, password, mode, conn): #check and commit
         return False
     if mode == 2:
         DatabaseUtils.add_user(name, password, diffie_helman(conn), url)
-    return true
+    return True
+
+def server_program():
+    server_socket = start_connection()
+
+    while True:
+        conn, address = server_socket.accept()
+        client_thread = threading.Thread(target=handle_client, args=(conn, address))
+        client_thread.start()
+
 if __name__ == '__main__':
     server_program()
