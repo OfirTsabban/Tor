@@ -20,10 +20,16 @@ app = Flask(__name__)
 def node(node_type):
 
     data = request.data
+    source_ip = request.headers.get('Source-IP')
     decreptList = []
     if node_type == 'entry':
-        isDecrept = True
-        utils.move_package_and_remove_encrepion(entry_node_key,data)
+        answer = utils.move_package_and_remove_encrepion(entry_node_key,data)
+        if answer != "":
+            utils.move_package_back_and_add_encrepion(entry_node_key,answer,source_ip)
+        else:
+            answer = utils.get_back_the_answer()
+            #add condition to not continue until there is answer
+            utils.move_package_back_and_add_encrepion(entry_node_key,answer,source_ip)
     return "Data received and processed", 200
 
 @app.route('/entry_node', methods=['POST'])

@@ -121,7 +121,7 @@ def authentication(username, password, mode, conn):
                 return True
         return False
     if mode == 2:
-        DatabaseUtils.add_user(name, password, diffie_helman(conn), url)
+        DatabaseUtils.add_user(username, password, diffie_helman(conn), url)
     return True
 
 def server_program():

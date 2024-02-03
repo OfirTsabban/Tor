@@ -1,86 +1,72 @@
-import utils
-import random
+import socket
 import diffieHelmanHelper
-import requests
+import utils
 
-first_node_url = 'http://172.17.0.2:5001/node/entry'
-second_node_url = 'http://172.17.0.3:5002/node/relay'
-third_node_url = 'http://172.17.0.4:5003/node/exit'
+def client_program():
+    key = 0
+    host = socket.gethostname()  # as both code is running on same pc
+    port = 5000  # socket server port number
+    client_socket = socket.socket()  # instantiate
+    client_socket.connect((host, port))  # connect to the server
 
-list_of_urls = [first_node_url,second_node_url,third_node_url]
+    message = input(" -> ")  # take input
 
-def interactive_client(list_by_order):
-    print("Interactive Tor-like Client. Type 'exit' to quit.\n")
-    func_paramete_list = []
-    while True:
-        message = input("Enter path of website : ")
-        if message.lower() == 'exit':
-            break
-        func_paramete_list.append(message)
-        if "entry" in list_by_order[0]:
-            func_paramete_list.append(entry_node_key)
-            func_paramete_list.append(list_of_urls[0])
-            #response = makeEncreption(message,entry_node_key,list_of_urls[0])
-            if "relay" in list_by_order[1]:
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                #response = makeEncreption(message,entry_node_key,list_of_urls[0],)
-            elif "exit" in list_by_order[1]:
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
+    while message.lower().strip() != 'bye':
+        client_socket.send(message.encode())  # send message
+        data = client_socket.recv(1024).decode()  # receive response
+        mode = get_mode(data)
+        if mode == 1:
+            print(data)
+            choice = input("enter choice: ")
+            client_socket.send(choice.encode())
+            data = client_socket.recv(1024).decode()
+            print(data)
+            choice = input("enter name: ")
+            client_socket.send(choice.encode())
+            data = client_socket.recv(1024).decode()
+            print(data)
+            choice = input("enter password: ")
+            client_socket.send(choice.encode())
+            if(choice == "2"):
+                key = diffie_helman(str(data), client_socket)
+                print(key)
+        if mode == 2: #has to be on a thread
+            packet = client_socket.recv(1024).decode()  # receive response
+            data = forward_message(packet)
+            client_socket.send(data.encode())  # send message
+        message = input("enter path of website - \n")
+        print('Received from server: ' + message)  # show in terminal
+        #server checks if user already has a key.
 
-        elif "relay" in list_by_order[0]:
+    client_socket.close()  # close the connection
 
-            func_paramete_list.append(relay_node_key)
-            func_paramete_list.append(list_of_urls[1])
+def get_mode(data):
+    mode = data[data.find(":"):data.find("/")]
+    return int(mode)
 
-            if "entry" in list_by_order[1]:
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-
-            elif "exit" in list_by_order[1]:
-                func_paramete_list.append(exit_node_key)
-                func_paramete_list.append(list_of_urls[2])
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-
-        elif "exit" in list_by_order[0]:
-
-            func_paramete_list.append(exit_node_key)
-            func_paramete_list.append(list_of_urls[2])
-
-            if "entry" in list_by_order[1]:
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-
-            elif "relay" in list_by_order[1]:
-                func_paramete_list.append(relay_node_key)
-                func_paramete_list.append(list_of_urls[1])
-                func_paramete_list.append(entry_node_key)
-                func_paramete_list.append(list_of_urls[0])
-
-        response = makeEncreption(func_paramete_list)
-        print("Response from entry node:", response.text)
-
-def makeEncreption(func_paramete_list):
-        encrypted_message = utils.encrypt_message(func_paramete_list[1], func_paramete_list[0])
-        # Encrypt using relay_node_key
-        argument_list = [encrypted_message,func_paramete_list[4]]
-        encrypted_message = utils.encrypt_message(func_paramete_list[3], argument_list)
-        argument_list = [encrypted_message,func_paramete_list[6]]
-        # Encrypt using entry_node_key
-        encrypted_message = utils.encrypt_message(func_paramete_list[5], argument_list)
-        # Send the encrypted message to the entry node
-        response = requests.post(func_paramete_list[2], data=encrypted_message)
-        return response
+def forward_message(packet):
+    utils.move_package_and_remove_encrepion(key,packet)
+    message_recived = False
+    fail = False
+    while message_recived == False:
+        port = 5000
+        #get ip & port from packet
+        server_socket = socket.socket()  # get instance
+        server_socket.bind((host, port))  # bind host address and port together
+        server_socket.listen(1)
+        conn, address = server_socket.accept()  # accept new connection
+        print("Connection from: " + str(address))
+        while True:
+            # receive data stream. it won't accept data packet greater than 1024 bytes
+            data = conn.recv(1024).decode()
+            if not data:
+                # if data is not received break
+                fail = True
+                break
+            message_recived = True
+    if fail == True:
+        data = "couldnt reach the page\n"
+    return data
 
 def diffie_helman(data, socket):
     data = socket.recv(1024).decode()  # receive response
@@ -93,9 +79,5 @@ def diffie_helman(data, socket):
     socket.send(data.encode())
     return pow(b2, a) % P
 
-if __name__ == "__main__":
-    entry_node_key = list_of_urls[0]
-    relay_node_key = list_of_urls[1]
-    exit_node_key = list_of_urls[2]
-    interactive_client(list_by_order)
-
+if __name__ == '__main__':
+    client_program()

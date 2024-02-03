@@ -10,13 +10,16 @@ app = Flask(__name__)
 @app.route('/node/<node_type>', methods=['POST'])
 def node(node_type):
     data = request.data
+    source_ip = request.headers.get('Source-IP')
     decreptList = 0
     if node_type == 'exit':
-        utils.move_package_and_remove_encrepion(exit_node_key,data)
-
-        #next_node_url = 'http://172.17.0.3:5002/relay_node'
-        # Send back to relay node
-        #utils.forward_message(next_node_url, encrypted_content)
+        answer = utils.move_package_and_remove_encrepion(exit_node_key,data)
+        if answer != "":
+            utils.move_package_back_and_add_encrepion(exit_node_key,answer,source_ip)
+        else:
+            answer = utils.get_back_the_answer()
+            #add condition to not continue until there is answer
+            utils.move_package_back_and_add_encrepion(exit_node_key,answer,source_ip)
         return "Exit node processed request", 200
         #exit_node(final_message)
 
