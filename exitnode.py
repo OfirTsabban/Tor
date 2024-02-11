@@ -17,10 +17,10 @@ def node(node_type):
         if answer != "":
             utils.move_package_back_and_add_encrepion(exit_node_key,answer,source_ip)
         else:
-            answer = utils.get_back_the_answer()
-            #add condition to not continue until there is answer
-            utils.move_package_back_and_add_encrepion(exit_node_key,answer,source_ip)
-        return "Exit node processed request", 200
+            while True:
+                answer = utils.get_back_the_answer()
+                if answer:
+                    utils.move_package_back_and_add_encrepion(exit_node_key, answer, source_ip)
         #exit_node(final_message)
 
     return "Data received and processed", 200

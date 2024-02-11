@@ -18,9 +18,10 @@ def node(node_type):
         if answer != "":
             utils.move_package_back_and_add_encrepion(relay_node_key,answer,source_ip)
         else:
-            answer = utils.get_back_the_answer()
-            #add condition to not continue until there is answer
-            utils.move_package_back_and_add_encrepion(relay_node_key,answer,source_ip)
+            while True:
+                answer = utils.get_back_the_answer()
+                if answer:
+                    utils.move_package_back_and_add_encrepion(relay_node_key, answer, source_ip)
     return "Data received and processed", 200
 
 
