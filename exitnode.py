@@ -3,7 +3,8 @@ from flask import Flask, request
 import requests
 import socket
 
-exit_node_key = utils.not_user_diffie_helman()
+
+exit_node_key = utils.connect_with_server("server_url","exit")
 
 app = Flask(__name__)
 
@@ -21,7 +22,6 @@ def node(node_type):
                 answer = utils.get_back_the_answer()
                 if answer:
                     utils.move_package_back_and_add_encrepion(exit_node_key, answer, source_ip)
-        #exit_node(final_message)
 
     return "Data received and processed", 200
 

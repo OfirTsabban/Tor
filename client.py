@@ -1,83 +1,201 @@
 import socket
+import threading
 import diffieHelmanHelper
 import utils
+import requests
+from flask import Flask, request, render_template
+from threading import Thread
+from tkinter import Tk, Button, Label, Entry, messagebox
 
-def client_program():
-    key = 0
-    host = socket.gethostname()  # as both code is running on same pc
-    port = 5000  # socket server port number
-    client_socket = socket.socket()  # instantiate
-    client_socket.connect((host, port))  # connect to the server
+# Server URL
+SERVER_URL = "http://your-server-url"  # Replace with your server's URL
 
-    message = input(" -> ")  # take input
+app = Flask(__name__)
 
-    while message.lower().strip() != 'bye':
-        client_socket.send(message.encode())  # send message
-        data = client_socket.recv(1024).decode()  # receive response
-        mode = get_mode(data)
-        if mode == 1:
-            print(data)
-            choice = input("enter choice: ")
-            client_socket.send(choice.encode())
-            data = client_socket.recv(1024).decode()
-            print(data)
-            choice = input("enter name: ")
-            client_socket.send(choice.encode())
-            data = client_socket.recv(1024).decode()
-            print(data)
-            choice = input("enter password: ")
-            client_socket.send(choice.encode())
-            if(choice == "2"):
-                key = diffie_helman(str(data), client_socket)
-                print(key)
-        if mode == 2: #has to be on a thread
-            packet = client_socket.recv(1024).decode()  # receive response
-            data = forward_message(packet)
-            client_socket.send(data.encode())  # send message
-        message = input("enter path of website - \n")
-        print('Received from server: ' + message)  # show in terminal
-        #server checks if user already has a key.
+def request_docker_keys():
+    # Assuming some logic to request Docker keys from the server
+    response = requests.get(f"{SERVER_URL}/get_docker_keys")
+    print(response.text)
 
-    client_socket.close()  # close the connection
+def second_mode_logic():
+    # Add your logic for the second mode here
+    print("Second Mode Logic")
 
-def get_mode(data):
-    mode = data[data.find(":"):data.find("/")]
-    return int(mode)
+def create_registration_window():
+    registration_window = Tk()
+    registration_window.title("Registration")
 
-def forward_message(packet):
-    utils.move_package_and_remove_encrepion(key,packet)
-    message_recived = False
-    fail = False
-    while message_recived == False:
-        port = 5000
-        #get ip & port from packet
-        server_socket = socket.socket()  # get instance
-        server_socket.bind((host, port))  # bind host address and port together
-        server_socket.listen(1)
-        conn, address = server_socket.accept()  # accept new connection
-        print("Connection from: " + str(address))
-        while True:
-            # receive data stream. it won't accept data packet greater than 1024 bytes
-            data = conn.recv(1024).decode()
-            if not data:
-                # if data is not received break
-                fail = True
-                break
-            message_recived = True
-    if fail == True:
-        data = "couldnt reach the page\n"
-    return data
+    # Function to handle the DONE button click
+    def done_button_click():
+        username = username_entry.get()
+        password = password_entry.get()
 
-def diffie_helman(data, socket):
-    data = socket.recv(1024).decode()  # receive response
-    P = diffieHelmanHelper.get_P_G(data, "P:")
-    G = diffieHelmanHelper.get_P_G(data, "G:")
-    a = diffieHelmanHelper.get_a(P)
-    b2 = int(diffieHelmanHelper.get_result(data))
-    b = pow(G, a) % P
-    data = f"P:{P},G:{G},b:{b}"
-    socket.send(data.encode())
-    return pow(b2, a) % P
+        if not username or not password:
+            messagebox.showerror("Error", "Please fill in all required fields.")
+            return
+
+        # Call the registration logic
+        response = register_user(username, password)
+
+        if response == '1':
+            messagebox.showinfo("Registration Successful", "Registration successful. You can now enter the target path.")
+            open_target_path_screen()
+            registration_window.destroy()
+        else:
+            messagebox.showerror("Error", "Incorrect fields. Please try again.")
+
+    label = Label(registration_window, text="Register a new account:", font=("Helvetica", 40))
+    label.pack()
+
+    username_label = Label(registration_window, text="Username:", font=("Helvetica", 30))
+    username_label.pack()
+
+    username_entry = Entry(registration_window, font=("Helvetica", 25))
+    username_entry.pack()
+
+    password_label = Label(registration_window, text="Password:", font=("Helvetica", 30))
+    password_label.pack()
+
+    password_entry = Entry(registration_window, show="*", font=("Helvetica", 25))
+    password_entry.pack()
+
+    done_button = Button(registration_window, text="DONE", command=done_button_click, width=20, height=2)
+    done_button.pack()
+
+    registration_window.mainloop()
+
+def register_user(username, password):
+    # Add logic to send registration data to the server
+    print(f"Registering user: {username}, {password}")
+
+    # Assuming you want to generate a new key during registration
+    user_key = utils.generate_key()
+
+    # Send data to the server for registration, including the new key
+    data = {
+        'username': username,
+        'password': password,
+        'type': 'register',
+        'key': user_key.decode()  # Convert bytes to string for transmission
+    }
+
+    # Send the data to the server and get the response
+    response = requests.post(f"{SERVER_URL}/register_user", json=data).text
+    return response
+
+def create_login_window():
+    login_window = Tk()
+    login_window.title("Login")
+
+    # Function to handle the DONE button click
+    def done_button_click():
+        username = username_entry.get()
+        password = password_entry.get()
+
+        if not username or not password:
+            messagebox.showerror("Error", "Please fill in all required fields.")
+            return
+
+        # Call the login logic
+        response = login_user(username, password)
+
+        if response == '1':
+            messagebox.showinfo("Login Successful", "Login successful. You can now enter the target path.")
+            open_target_path_screen()
+            login_window.destroy()
+        else:
+            messagebox.showerror("Error", "Incorrect fields. Please try again.")
+
+    label = Label(login_window, text="Login to your account:", font=("Helvetica", 40))
+    label.pack()
+
+    username_label = Label(login_window, text="Username:", font=("Helvetica", 30))
+    username_label.pack()
+
+    username_entry = Entry(login_window, font=("Helvetica", 25))
+    username_entry.pack()
+
+    password_label = Label(login_window, text="Password:", font=("Helvetica", 30))
+    password_label.pack()
+
+    password_entry = Entry(login_window, show="*", font=("Helvetica", 25))
+    password_entry.pack()
+
+    done_button = Button(login_window, text="DONE", command=done_button_click, width=20, height=2)
+    done_button.pack()
+
+    login_window.mainloop()
+
+def login_user(username, password):
+    # Add logic to send login data to the server
+    print(f"Logging in user: {username}, {password}")
+
+    # Send data to the server for login
+    data = {
+        'username': username,
+        'password': password,
+        'type': 'login'
+    }
+
+    # Send the data to the server and get the response
+    response = requests.post(f"{SERVER_URL}/login_user", json=data).text
+    return response
+
+def open_target_path_screen():
+    target_path_window = Tk()
+    target_path_window.title("Enter Target Path")
+
+    label = Label(target_path_window, text="Enter the target path:")
+    label.pack()
+
+    target_path_entry = Entry(target_path_window)
+    target_path_entry.pack()
+
+    def done_button_click():
+        target_path = target_path_entry.get()
+        if not target_path:
+            messagebox.showerror("Error", "Please fill in the target path.")
+            return
+
+        print("Target Path:", target_path)
+
+        # You can add additional logic here based on the entered target path
+
+        # Close the target path window after DONE
+        target_path_window.destroy()
+
+    done_button = Button(target_path_window, text="DONE", command=done_button_click, width=20, height=2)
+    done_button.pack()
+
+    target_path_window.mainloop()
+
+def open_registration_window():
+    registration_thread = Thread(target=create_registration_window)
+    registration_thread.start()
+
+def open_login_window():
+    login_thread = Thread(target=create_login_window)
+    login_thread.start()
+
+def first_mode():
+    print("First Mode - GUI, login, register, etc.")
+
+    main_window = Tk()
+    main_window.title("Main Window")
+
+    # Button to open registration window
+    register_button = Button(main_window, text="Register", command=open_registration_window, font=("Helvetica", 80))
+    register_button.pack()
+
+    # Button to open login window
+    login_button = Button(main_window, text="Login", command=open_login_window, font=("Helvetica", 80))
+    login_button.pack()
+
+    main_window.mainloop()
 
 if __name__ == '__main__':
-    client_program()
+    # Start the Flask server for the second mode
+    Thread(target=app.run, kwargs={'port': 5001, 'host': "0.0.0.0", 'debug': False, 'use_reloader': False}).start()
+
+    # Call the first mode from the main
+    first_mode()

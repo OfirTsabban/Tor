@@ -24,6 +24,12 @@ def move_package_back_and_add_encrepion(node_key,data,url):
 def generate_key():
     return Fernet.generate_key()
 
+def connect_with_server(server_url, docker_name):
+    data = {'docker_name': docker_name}
+    response = requests.post(f"{server_url}/connect_docker", json=data).json()
+    key = response['key']
+    return key
+
 def encrypt_message(key, message):
 
     # Serialize the message if it's a list

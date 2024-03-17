@@ -2,7 +2,7 @@ import utils
 from flask import Flask, request
 import socket
 import requests
-entry_node_key = utils.not_user_diffie_helman()
+entry_node_key = utils.connect_with_server("server_url","entry")
 
 
 # Setting up the node keys

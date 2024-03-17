@@ -26,10 +26,10 @@ def primitive_check(g, p, L):
         if L.count(i) > 1:
             L.clear()
             return -1
-        return 1
+    return 1
 
 def get_P(): #getting P
-    P = generate_random_p
+    P = generate_random_p()
     return P
 
 def get_G(P): #getting G
@@ -62,10 +62,8 @@ def generate_random_p():
             return random_number
 
 
-
-
 def get_a(P):
-    a = random_number = random.random() * P
+    a = random.random() * P
     return a
 
 def get_result(message):

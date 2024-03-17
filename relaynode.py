@@ -3,7 +3,7 @@ from flask import Flask, request
 import socket
 import requests
 
-relay_node_key = utils.not_user_diffie_helman()
+relay_node_key = utils.connect_with_server("server_url","relay")
 
 
 app = Flask(__name__)

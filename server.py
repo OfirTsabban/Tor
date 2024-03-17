@@ -3,8 +3,10 @@ import threading
 import diffieHelmanHelper
 import utils
 import sqlite3
-import DatabaseUtils
 import random
+from flask import Flask, request
+
+app = Flask(__name__)
 
 def start_connection():
     host = socket.gethostname()
@@ -13,41 +15,6 @@ def start_connection():
     server_socket.bind((host, port))
     server_socket.listen(5)
     return server_socket
-
-def handle_client(conn, address):
-    print("Connection from: " + str(address))
-
-    con = sqlite3.connect("users.db")
-    cur = con.cursor()
-    res = cur.execute("SELECT name FROM sqlite_master")
-    if res.fetchone() is None:
-        cur.execute("CREATE TABLE users(name, password, key, url)")
-
-    message = "message type:1/HELLO!\nENTER 1 TO CONNECT\nENTER 2 TO REGISTER\n"
-    conn.send(message.encode())
-
-    server_menu(conn)
-
-    conn.close()
-
-def server_menu(conn):
-    while True:
-        choice = conn.recv(1024).decode()
-        if not choice:
-            break
-        if choice != "1" and choice != "2":
-            break
-        user_info = get_user_info(conn)
-        name = user_info[0]
-        password = user_info[1]
-        if authentication(name, password, choice, conn) == False:
-            return "can't connect\n"
-    while True:
-        web = conn.recv(1024).decode()
-        if not web:
-            return "couldn't reach the page\n"
-        data = forward_message(web)
-        conn.send(data.encode())
 
 def forward_message(data):
     message_recived = False
@@ -68,24 +35,45 @@ def forward_message(data):
         data = "couldn't reach the page\n"
     return data
 
-def create_packet(data):
-    rout = random_order()
-    packet = "message type:2/" + data
-    for node in rout:
-        key = DatabaseUtils.get_userkey(node)
-        url = DatabaseUtils.get_userurl(node)
-        packet = "message type:2/" + utils.decrypt(packet, key) + url
-    return packet
+def get_usernames():
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
+    cur.execute("SELECT name FROM users")
+    usernames = [row[0] for row in cur.fetchall()]
+    con.close()
+    return usernames
 
 def random_order():
-    usernames = DatabaseUtils.get_usernames()
-    names = ""
-    for username in usernames:
-        names += username[0]
-        names += ","
-    names = names[:-1]
-    names = names.split()
-    return random.choices(names, k=3)
+    usernames = get_usernames()
+    names = [username[0] for username in usernames]  # Extracting usernames from the list
+    return random.sample(names, k=min(3, len(names)))  # Randomly sample up to 3 usernames
+
+def get_userkey(username):
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
+    cur.execute("SELECT key FROM users WHERE name=?", (username,))
+    key = cur.fetchone()[0]
+    con.close()
+    return key
+
+def get_userurl(username):
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
+    cur.execute("SELECT url FROM users WHERE name=?", (username,))
+    url = cur.fetchone()[0]
+    con.close()
+    return url
+
+def create_packet(target_website_path):
+    order = random_order()
+    packet = target_website_path
+
+    for username in order:
+        key = get_userkey(username)
+        url = get_userurl(username)
+        packet = [utils.decrypt_message(packet, key), url]
+
+    return packet
 
 def diffie_helman(conn):
     conn.send("1".encode())
@@ -114,23 +102,94 @@ def get_user_info(conn):
         password = ""
     return (name, password)
 
-def authentication(username, password, mode, conn):
-    if mode == 1:
-        if username in DatabaseUtils.get_usernames():
-            if password == DatabaseUtils.get_userpassword(username):
-                return True
-        return False
-    if mode == 2:
-        DatabaseUtils.add_user(username, password, diffie_helman(conn), url)
-    return True
+def register_user(username, password, key):
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
 
-def server_program():
-    server_socket = start_connection()
+    # Check if the username already exists
+    cur.execute("SELECT * FROM users WHERE name=?", (username,))
+    existing_user = cur.fetchone()
 
-    while True:
-        conn, address = server_socket.accept()
-        client_thread = threading.Thread(target=handle_client, args=(conn, address))
-        client_thread.start()
+    if existing_user:
+        con.close()
+        return '0'  # User already exists, registration failed
+    else:
+        cur.execute("INSERT INTO users (name, password, key) VALUES (?, ?, ?)", (username, password, key))
+        con.commit()
+        con.close()
+        return '1'  # Registration successful
+
+@app.route('/register_user', methods=['POST'])
+def register_user_route():
+    data = request.json
+    username = data['username']
+    password = data['password']
+    key = data['key']
+
+    response = register_user(username, password, key)
+    return response
+
+def login_user(username, password):
+    con = sqlite3.connect("users.db")
+    cur = con.cursor()
+
+    # Check if the username and password match
+    cur.execute("SELECT * FROM users WHERE name=? AND password=?", (username, password))
+    matching_user = cur.fetchone()
+
+    con.close()
+
+    if matching_user:
+        return '1'  # Login successful
+    else:
+        return '0'  # Login failed
+
+@app.route('/login_user', methods=['POST'])
+def login_user_route():
+    data = request.json
+    username = data['username']
+    password = data['password']
+
+    response = login_user(username, password)
+    return response
+
+# Function to handle Docker node interaction
+def handle_docker_node(data):
+    # Implement logic to handle Docker node requests
+    print("Handling Docker node request:", data)
+    return "Docker node request received and processed"
+
+@app.route('/docker_node', methods=['POST'])
+def docker_node_route():
+    data = request.data
+    response = handle_docker_node(data)
+    return response
+
+def connect_with_docker(docker_name):
+    key = get_userkey(docker_name)  # Replace with your function to get the key
+    return key
+
+@app.route('/connect_docker', methods=['POST'])
+def connect_docker_route():
+    data = request.json
+    docker_name = data['docker_name']
+    key = connect_with_docker(docker_name)
+    return {'key': key}
+
+def diffie_helman(conn, docker_name):
+    conn.send("1".encode())
+    P = diffieHelmanHelper.get_P()
+    G = diffieHelmanHelper.get_G(P)
+    a = diffieHelmanHelper.get_a(P)
+    b = pow(G, a) % P
+    data = f"P:{P},G:{G},b:{b}"
+    conn.send(data.encode())
+    data = conn.recv(1024).decode()
+    b2 = int(diffieHelmanHelper.get_result(str(data)))
+    key = pow(b2, a) % P
+
+    return key
 
 if __name__ == '__main__':
-    server_program()
+    # Start the Flask app
+    app.run(port=5000, host="0.0.0.0", debug=False, use_reloader=False)
