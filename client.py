@@ -8,7 +8,7 @@ from threading import Thread
 from tkinter import Tk, Button, Label, Entry, messagebox
 
 # Server URL
-SERVER_URL = "http://your-server-url"  # Replace with your server's URL
+SERVER_URL = "http://10.0.0.15:5000"
 
 app = Flask(__name__)
 
@@ -78,9 +78,9 @@ def register_user(username, password):
         'type': 'register',
         'key': user_key.decode()  # Convert bytes to string for transmission
     }
-
     # Send the data to the server and get the response
-    response = requests.post(f"{SERVER_URL}/register_user", json=data).text
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(SERVER_URL + "/register_user", json=data, headers=headers).text
     return response
 
 def create_login_window():
@@ -138,7 +138,7 @@ def login_user(username, password):
     }
 
     # Send the data to the server and get the response
-    response = requests.post(f"{SERVER_URL}/login_user", json=data).text
+    response = requests.post("http://127.0.0.1:5000/login_user", json=data).text
     return response
 
 def open_target_path_screen():
@@ -199,3 +199,4 @@ if __name__ == '__main__':
 
     # Call the first mode from the main
     first_mode()
+

@@ -8,6 +8,21 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
+
+def initialize_database():
+    conn = sqlite3.connect("users.db")
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            name TEXT,
+            password TEXT,
+            key TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
 def start_connection():
     host = socket.gethostname()
     port = 5000
@@ -127,6 +142,7 @@ def register_user_route():
     key = data['key']
 
     response = register_user(username, password, key)
+    print(response)
     return response
 
 def login_user(username, password):
@@ -144,11 +160,16 @@ def login_user(username, password):
     else:
         return '0'  # Login failed
 
+# Inside the '/login_user' route
 @app.route('/login_user', methods=['POST'])
 def login_user_route():
     data = request.json
     username = data['username']
     password = data['password']
+
+    print("Received login request:")
+    print("Username:", username)
+    print("Password:", password)
 
     response = login_user(username, password)
     return response
@@ -191,5 +212,6 @@ def diffie_helman(conn, docker_name):
     return key
 
 if __name__ == '__main__':
+    initialize_database()
     # Start the Flask app
     app.run(port=5000, host="0.0.0.0", debug=False, use_reloader=False)
