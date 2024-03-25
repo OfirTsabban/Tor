@@ -105,12 +105,12 @@ def diffie_helman(conn):
     return key
 
 def get_user_info(conn):
-    message = "ENTER USERNAME: "
+    message = "ENTER name: "
     conn.send(message.encode())
     name = conn.recv(1024).decode()
     if not name:
         name = ""
-    message = "ENTER PASSWORD: "
+    message = "ENTER password: "
     conn.send(message.encode())
     password = conn.recv(1024).decode()
     if not password:
@@ -152,7 +152,6 @@ def login_user(username, password):
     # Check if the username and password match
     cur.execute("SELECT * FROM users WHERE name=? AND password=?", (username, password))
     matching_user = cur.fetchone()
-
     con.close()
 
     if matching_user:

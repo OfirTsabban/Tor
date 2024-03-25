@@ -7,6 +7,8 @@ from flask import Flask, request, render_template
 from threading import Thread
 from tkinter import Tk, Button, Label, Entry, messagebox
 
+gui_stufe = []
+
 # Server URL
 SERVER_URL = "http://10.0.0.15:5000"
 
@@ -25,7 +27,6 @@ def create_registration_window():
     registration_window = Tk()
     registration_window.title("Registration")
 
-    # Function to handle the DONE button click
     def done_button_click():
         username = username_entry.get()
         password = password_entry.get()
@@ -34,13 +35,12 @@ def create_registration_window():
             messagebox.showerror("Error", "Please fill in all required fields.")
             return
 
-        # Call the registration logic
+        registration_window.destroy()  # Destroy the window before further operations
+
         response = register_user(username, password)
 
         if response == '1':
-            messagebox.showinfo("Registration Successful", "Registration successful. You can now enter the target path.")
             open_target_path_screen()
-            registration_window.destroy()
         else:
             messagebox.showerror("Error", "Incorrect fields. Please try again.")
 
@@ -65,20 +65,16 @@ def create_registration_window():
     registration_window.mainloop()
 
 def register_user(username, password):
-    # Add logic to send registration data to the server
     print(f"Registering user: {username}, {password}")
 
-    # Assuming you want to generate a new key during registration
     user_key = utils.generate_key()
 
-    # Send data to the server for registration, including the new key
     data = {
         'username': username,
         'password': password,
         'type': 'register',
-        'key': user_key.decode()  # Convert bytes to string for transmission
+        'key': user_key.decode()
     }
-    # Send the data to the server and get the response
     headers = {'Content-Type': 'application/json'}
     response = requests.post(SERVER_URL + "/register_user", json=data, headers=headers).text
     return response
@@ -87,7 +83,6 @@ def create_login_window():
     login_window = Tk()
     login_window.title("Login")
 
-    # Function to handle the DONE button click
     def done_button_click():
         username = username_entry.get()
         password = password_entry.get()
@@ -96,13 +91,12 @@ def create_login_window():
             messagebox.showerror("Error", "Please fill in all required fields.")
             return
 
-        # Call the login logic
+        login_window.destroy()
+
         response = login_user(username, password)
 
         if response == '1':
-            messagebox.showinfo("Login Successful", "Login successful. You can now enter the target path.")
             open_target_path_screen()
-            login_window.destroy()
         else:
             messagebox.showerror("Error", "Incorrect fields. Please try again.")
 
@@ -127,18 +121,16 @@ def create_login_window():
     login_window.mainloop()
 
 def login_user(username, password):
-    # Add logic to send login data to the server
     print(f"Logging in user: {username}, {password}")
 
-    # Send data to the server for login
     data = {
         'username': username,
         'password': password,
         'type': 'login'
     }
 
-    # Send the data to the server and get the response
-    response = requests.post("http://127.0.0.1:5000/login_user", json=data).text
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(SERVER_URL + "/login_user", json=data, headers=headers).text
     return response
 
 def open_target_path_screen():
@@ -158,10 +150,6 @@ def open_target_path_screen():
             return
 
         print("Target Path:", target_path)
-
-        # You can add additional logic here based on the entered target path
-
-        # Close the target path window after DONE
         target_path_window.destroy()
 
     done_button = Button(target_path_window, text="DONE", command=done_button_click, width=20, height=2)
@@ -169,13 +157,19 @@ def open_target_path_screen():
 
     target_path_window.mainloop()
 
+def deleteGui():
+    for element in gui_stufe:
+        element.destroy()
+
 def open_registration_window():
-    registration_thread = Thread(target=create_registration_window)
-    registration_thread.start()
+    deleteGui()
+    registration_window = Thread(target=create_registration_window)
+    registration_window.start()
 
 def open_login_window():
-    login_thread = Thread(target=create_login_window)
-    login_thread.start()
+    deleteGui()
+    login_window = Thread(target=create_login_window)
+    login_window.start()
 
 def first_mode():
     print("First Mode - GUI, login, register, etc.")
@@ -183,20 +177,24 @@ def first_mode():
     main_window = Tk()
     main_window.title("Main Window")
 
-    # Button to open registration window
     register_button = Button(main_window, text="Register", command=open_registration_window, font=("Helvetica", 80))
     register_button.pack()
 
-    # Button to open login window
     login_button = Button(main_window, text="Login", command=open_login_window, font=("Helvetica", 80))
     login_button.pack()
+
+    if register_button not in gui_stufe:
+        gui_stufe.append(register_button)
+
+    if login_button not in gui_stufe:
+        gui_stufe.append(login_button)
+
+    if main_window not in gui_stufe:
+        gui_stufe.append(main_window)
 
     main_window.mainloop()
 
 if __name__ == '__main__':
-    # Start the Flask server for the second mode
     Thread(target=app.run, kwargs={'port': 5001, 'host': "0.0.0.0", 'debug': False, 'use_reloader': False}).start()
 
-    # Call the first mode from the main
     first_mode()
-
