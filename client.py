@@ -1,3 +1,8 @@
+import sys
+import requests
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
+from PyQt5.QtWebEngineWidgets import QWebEngineView
+from PyQt5.QtCore import QUrl
 import socket
 import threading
 import diffieHelmanHelper
@@ -13,6 +18,26 @@ gui_stufe = []
 SERVER_URL = "http://10.0.0.15:5000"
 
 app = Flask(__name__)
+
+class WebsiteViewer(QMainWindow):
+    def __init__(self, content):
+        super().__init__()
+        self.setWindowTitle("Website Viewer")
+        self.resize(800, 600)
+
+        layout = QVBoxLayout()
+        self.web_view = QWebEngineView()
+        layout.addWidget(self.web_view)
+
+        widget = QWidget()
+        widget.setLayout(layout)
+        self.setCentralWidget(widget)
+
+        self.load_website(content)
+
+    def load_website(self, content):
+        # Load the website content into the web view
+        self.web_view.setHtml(content)
 
 def request_docker_keys():
     # Assuming some logic to request Docker keys from the server
@@ -134,28 +159,17 @@ def login_user(username, password):
     return response
 
 def open_target_path_screen():
-    target_path_window = Tk()
-    target_path_window.title("Enter Target Path")
+    url = "https://www.google.com/"
+    response = requests.get(url)
 
-    label = Label(target_path_window, text="Enter the target path:")
-    label.pack()
-
-    target_path_entry = Entry(target_path_window)
-    target_path_entry.pack()
-
-    def done_button_click():
-        target_path = target_path_entry.get()
-        if not target_path:
-            messagebox.showerror("Error", "Please fill in the target path.")
-            return
-
-        print("Target Path:", target_path)
-        target_path_window.destroy()
-
-    done_button = Button(target_path_window, text="DONE", command=done_button_click, width=20, height=2)
-    done_button.pack()
-
-    target_path_window.mainloop()
+    if response.status_code == 200:
+        content = response.text
+        app = QApplication(sys.argv)
+        viewer = WebsiteViewer(content)
+        viewer.show()
+        sys.exit(app.exec_())
+    else:
+        print(f"Failed to fetch website content. Status code: {response.status_code}")
 
 def deleteGui():
     for element in gui_stufe:
@@ -198,3 +212,4 @@ if __name__ == '__main__':
     Thread(target=app.run, kwargs={'port': 5001, 'host': "0.0.0.0", 'debug': False, 'use_reloader': False}).start()
 
     first_mode()
+
