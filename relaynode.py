@@ -3,36 +3,38 @@ from flask import Flask, request
 import socket
 import requests
 
-relay_node_key = utils.connect_with_server("server_url","relay")
-
-
 app = Flask(__name__)
+
+relay_node_key = utils.connect_with_server("http://10.0.0.15:5000", "relay")
+print("key - - - - " , relay_node_key)
+sender_info = ""
 
 @app.route('/node/<node_type>', methods=['POST'])
 def node(node_type):
+    global sender_info
+    global relay_node_key
+
     data = request.data
-    source_ip = request.headers.get('Source-IP')
-    decreptList = []
+    sender_info = request.headers.get('Sender-Info')
+    sender_info = "http://" + str(sender_info) + "/back_way"
+    print("sender_info - - - - - " , sender_info)
     if node_type == 'relay':
-        answer = utils.move_package_and_remove_encrepion(relay_node_key,data)
+        headers = {"Sender-Info": "127.0.0.1:5002"}
+        answer = utils.move_package_and_remove_encrepion(relay_node_key, data,headers)
         if answer != "":
-            utils.move_package_back_and_add_encrepion(relay_node_key,answer,source_ip)
-        else:
-            while True:
-                answer = utils.get_back_the_answer()
-                if answer:
-                    utils.move_package_back_and_add_encrepion(relay_node_key, answer, source_ip)
+            response = requests.get(answer).text
+            print(response)
+            utils.move_package_back_and_add_encrepion(relay_node_key,response,sender_info)
     return "Data received and processed", 200
 
-
-@app.route('/relay_node', methods=['POST'])
-def relay_node():
-    encrypted_data = request.data
-    re_encrypted_content = utils.decrypt_message(relay_node_key, encrypted_data)
-    encrypted = utils.encrypt_message(relay_node_key, re_encrypted_content)
-    # Send back to entry node
-    utils.forward_message('http://172.17.0.2:5001/entry_node', encrypted)
-    return "Relay node forwarded response", 200
+@app.route('/back_way', methods=['POST'])
+def back_way():
+    global sender_info
+    global relay_node_key
+    print("12345678")
+    data = request.data
+    utils.move_package_back_and_add_encrepion(relay_node_key, data, sender_info)
+    return "1"
 
 # Function to run a node server on a specific port
 def run_node(port, node_type):

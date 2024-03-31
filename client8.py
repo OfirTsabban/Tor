@@ -1,11 +1,16 @@
 import sys
 import requests
+import tkinter as tk
+import webview
+from tkinter.scrolledtext import ScrolledText
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
-from PyQt5.QtWebEngineWidgets import QWebEngineView
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, pyqtSlot
+from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineScript
 import socket
 import threading
 import diffieHelmanHelper
+import webbrowser
+import json
 import utils
 import requests
 from flask import Flask, request, render_template
@@ -13,11 +18,59 @@ from threading import Thread
 from tkinter import Tk, Button, Label, Entry, messagebox
 
 gui_stufe = []
-
+name = None
 # Server URL
 SERVER_URL = "http://10.0.0.15:5000"
 
 app = Flask(__name__)
+
+
+@app.route('/search', methods=['GET', 'POST'])
+def search():
+    data = request.json
+    serach_text = data["googleText"]
+    print("Search text:", serach_text)
+    startProcces(data)
+    return "Valid response"
+
+@app.route('/back_way', methods=['POST'])
+def back_way():
+    data = request.data
+    data = data.decode()
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(SERVER_URL + "/decrypt_packet", json=data, headers=headers).text
+    print("secsessssssssssssssss - - - - - -- - -- - ")
+    showUI(response)
+    return "1"
+
+def showUI(response):
+    app = QApplication(sys.argv)
+    #content = "<html><body><h1>Hello, World!</h1></body></html>"  # Example content
+    viewer = WebsiteViewer(response)
+    viewer.show()
+    sys.exit(app.exec_())
+def startProcces(data):
+    global name
+    data = {
+        'website': data,
+        'name': name,
+    }
+
+    headers = {'Content-Type': 'application/json'}
+    response = requests.post(SERVER_URL + "/create_packet", json=data, headers=headers).text
+    #    response_data = json.loads(response)
+    # Assuming 'response' contains the JSON string
+    response_data = json.loads(response)
+
+    # Extract values of 'encrypted_message' and 'first_url' from the dictionary
+    encrypted_message = response_data['encrypted_message']
+    original_encrypted_message = encrypted_message.encode()
+    first_url = response_data['first_url']
+    print(first_url)
+    print(original_encrypted_message)
+    headers = {"Sender-Info": "10.0.0.15:8000"}
+    utils.forward_message(first_url, original_encrypted_message,headers)
+
 
 class WebsiteViewer(QMainWindow):
     def __init__(self, content):
@@ -38,21 +91,39 @@ class WebsiteViewer(QMainWindow):
     def load_website(self, content):
         # Load the website content into the web view
         self.web_view.setHtml(content)
+        # Inject JavaScript to capture search query
+        self.web_view.page().runJavaScript("""
+            document.querySelector('form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                var searchInput = document.querySelector('input[name="q"]');
+                if (searchInput) {
+                    window.pywebchannel_1.sendMessage('searchQuery', searchInput.value);
+                }
+            });
+        """)
+
+    @pyqtSlot(str)
+    def handle_search_query(self, query):
+        print("Search query:", query)
+
 
 def request_docker_keys():
     # Assuming some logic to request Docker keys from the server
     response = requests.get(f"{SERVER_URL}/get_docker_keys")
     print(response.text)
 
+
 def second_mode_logic():
     # Add your logic for the second mode here
     print("Second Mode Logic")
+
 
 def create_registration_window():
     registration_window = Tk()
     registration_window.title("Registration")
 
     def done_button_click():
+        global name
         username = username_entry.get()
         password = password_entry.get()
 
@@ -63,9 +134,11 @@ def create_registration_window():
         registration_window.destroy()  # Destroy the window before further operations
 
         response = register_user(username, password)
-
+        print(response)
         if response == '1':
+            name = username
             open_target_path_screen()
+            return "12"
         else:
             messagebox.showerror("Error", "Incorrect fields. Please try again.")
 
@@ -104,11 +177,13 @@ def register_user(username, password):
     response = requests.post(SERVER_URL + "/register_user", json=data, headers=headers).text
     return response
 
+
 def create_login_window():
     login_window = Tk()
     login_window.title("Login")
 
     def done_button_click():
+        global name
         username = username_entry.get()
         password = password_entry.get()
 
@@ -121,6 +196,7 @@ def create_login_window():
         response = login_user(username, password)
 
         if response == '1':
+            name = username
             open_target_path_screen()
         else:
             messagebox.showerror("Error", "Incorrect fields. Please try again.")
@@ -145,6 +221,7 @@ def create_login_window():
 
     login_window.mainloop()
 
+
 def login_user(username, password):
     print(f"Logging in user: {username}, {password}")
 
@@ -158,32 +235,29 @@ def login_user(username, password):
     response = requests.post(SERVER_URL + "/login_user", json=data, headers=headers).text
     return response
 
-def open_target_path_screen():
-    url = "https://www.google.com/"
-    response = requests.get(url)
 
-    if response.status_code == 200:
-        content = response.text
-        app = QApplication(sys.argv)
-        viewer = WebsiteViewer(content)
-        viewer.show()
-        sys.exit(app.exec_())
-    else:
-        print(f"Failed to fetch website content. Status code: {response.status_code}")
+def open_target_path_screen():
+    url = "http://10.0.0.15:9000/"  # Replace with your Flask server's IP address
+    webbrowser.register('chrome', None,
+    webbrowser.BackgroundBrowser("C:\\Program Files\Google\Chrome\Application\chrome.exe"))
+    webbrowser.get('chrome').open(url)
 
 def deleteGui():
     for element in gui_stufe:
         element.destroy()
+
 
 def open_registration_window():
     deleteGui()
     registration_window = Thread(target=create_registration_window)
     registration_window.start()
 
+
 def open_login_window():
     deleteGui()
     login_window = Thread(target=create_login_window)
     login_window.start()
+
 
 def first_mode():
     print("First Mode - GUI, login, register, etc.")
@@ -208,8 +282,7 @@ def first_mode():
 
     main_window.mainloop()
 
+
 if __name__ == '__main__':
-    Thread(target=app.run, kwargs={'port': 5001, 'host': "0.0.0.0", 'debug': False, 'use_reloader': False}).start()
-
+    Thread(target=app.run, kwargs={'port': 8000, 'host': "0.0.0.0", 'debug': False, 'use_reloader': False}).start()
     first_mode()
-

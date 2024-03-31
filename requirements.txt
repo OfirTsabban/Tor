@@ -2,3 +2,5 @@ Flask~=3.0.0
 requests~=2.31.0
 cryptography~=41.0.7
 PyQt5~=5.15.10
+
+pywebview~=5.0.5
